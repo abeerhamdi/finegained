@@ -1,0 +1,5 @@
+1.) Does this scheme reveal information about the length of the classiﬁed content? If not, explain how it is concealed. If so, explain how one might conceal the length.
+
+2.) Can your ﬁle be read on any architecture? Consider how the machine endianess might affect the storage and retrieval of the integer values.
+
+Other stuffs maybe?
