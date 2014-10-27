@@ -18,4 +18,4 @@ void initialize_key(unsigned char *key);
 unsigned char * allocate_ciphertext(int mlen);
 void encrypt_and_print(EVP_CIPHER_CTX * ectx, char *msg, int mlen,char *res, int *olen, FILE * f);
 void encrypt();
-void hash();
+void hash(unsigned char *keytext, unsigned char *sha);
