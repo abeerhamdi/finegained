@@ -1,5 +1,6 @@
 #include "fge.h"
 
+
 /**
 main(int argc, char **argv){
 	int ret, total, keySize, urandFd;
