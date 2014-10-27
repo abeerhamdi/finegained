@@ -1,5 +1,6 @@
 #include "fge.h"
 
+
 void fprint_string_as_hex(FILE * f, unsigned char *s, int len)
 {
 	int i;
@@ -7,6 +8,7 @@ void fprint_string_as_hex(FILE * f, unsigned char *s, int len)
 		fprintf(f, "%02x", s[i]);
 	}
 }
+
 
 void initialize_key(unsigned char *key)
 {
@@ -18,11 +20,15 @@ void initialize_key(unsigned char *key)
 	}
 	fclose(rng);
 }
+
+
 unsigned char * allocate_ciphertext(int mlen)
 {
 	/* Alloc space for any possible padding. */
 	return (unsigned char *) malloc(mlen + BLOCKSIZE);
 }
+
+
 void encrypt_and_print(EVP_CIPHER_CTX * ectx, char *msg, int mlen,char *res, int *olen, FILE * f)
 {
 	int extlen;
@@ -36,6 +42,8 @@ void encrypt_and_print(EVP_CIPHER_CTX * ectx, char *msg, int mlen,char *res, int
 	fprint_string_as_hex(f, res, *olen);
 	fprintf(f, "\n");
 }
+
+
 void encrypt(){
 	EVP_CIPHER_CTX *ctx; /* SSL context */
 	const EVP_CIPHER *cipher = EVP_bf_cbc();/* Cipher */
@@ -60,4 +68,18 @@ void encrypt(){
 	ciphertext = allocate_ciphertext(mlen);
 	/* Encrypt data and print */
 	encrypt_and_print(ctx, msg, mlen, ciphertext,&ctlen, stdout);
+}
+
+void hash(unsigned char *keytext, unsigned char *sha){
+	int i;
+	size_t length = sizeof(keytext);
+	if ((strchr(keytext, '\n')) != NULL || (strchr(keytext, '\0')) != NULL){
+		unsigned char temp[length -1];
+		for (i = 0; i < length - 1; i++){
+			temp[i] = keytext[i];
+		}
+		keytext = temp;
+		length = length - 1;
+	}
+	SHA1(keytext, length, sha);
 }
