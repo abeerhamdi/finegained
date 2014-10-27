@@ -3,6 +3,26 @@
 
 int main(int argc, char **argv)
 {
+	int numSegments = 0;
+	uint32_t kid;
+	uint32_t magic = 1420420420;
+	uint32_t start = 1111111111;
+	if(argc < 3){
+		printf("%s\n", "Not enough args!"); 
+		return;
+	} else if(strcmp(argv[1],"-s") == 0){
+		numSegments = (argc - 3)/2;
+		kid = rand();
+		printf("%d\n",start);
+		return;
+	} else if(strcmp(argv[1] , "-c") == 0){
+		
+	} else if(strcmp(argv[1] ,"-u") == 0){
+	
+	} else if(strcmp(argv[1],"-key") == 0){
+		
+	}
+	
 	EVP_CIPHER_CTX *ctx; /* Encryption context*/
 	EVP_CIPHER *cipher; /* Cipher */
 	char ivec[EVP_MAX_IV_LENGTH] = {0};
