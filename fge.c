@@ -7,13 +7,25 @@ int main(int argc, char **argv)
 	uint32_t kid;
 	uint32_t magic = 1420420420;
 	uint32_t start = 1111111111;
+	typedef struct segment  {
+		uint32_t start;
+		uint32_t length;
+		char * content;
+	};
+	unsigned char key[MAXKEYLEN];/* Encryption key */
 	if(argc < 3){
 		printf("%s\n", "Not enough args!"); 
 		return;
 	} else if(strcmp(argv[1],"-s") == 0){
+		initialize_key(key);
 		numSegments = (argc - 3)/2;
+		printf("%d", numSegments);
+		struct segment segments[numSegments];
+		
 		kid = rand();
-		printf("%d\n",start);
+		char * passphrase = getpass("Enter password:\n");
+		//k key = hash password
+		
 		return;
 	} else if(strcmp(argv[1] , "-c") == 0){
 		
@@ -27,7 +39,6 @@ int main(int argc, char **argv)
 	EVP_CIPHER *cipher; /* Cipher */
 	char ivec[EVP_MAX_IV_LENGTH] = {0};
 	int fdk; /* Key to this file */
-	unsigned char key[MAXKEYLEN];/* Encryption key */
 	int fdp; /* Plaintext file */
 	char buf[BUFSIZE]; /* Hold plaintext */
 	int mlen; /* Length of plaintext */
@@ -38,7 +49,6 @@ int main(int argc, char **argv)
 	
 	/* Generate the key -- may be more bytes than needed*/
 	//initialize_key(key,MAXKEYLEN);
-	initialize_key(key);
 	fprintf(stdout,"Raw file key bytes <");
 	fprint_string_as_hex(stdout, key, MAXKEYLEN);
 	fprintf(stdout,">\n");
