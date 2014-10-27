@@ -1,3 +1,5 @@
+#include "fge.h"
+
 void fprint_string_as_hex(FILE * f, unsigned char *s, int len)
 {
 	int i;

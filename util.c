@@ -1,6 +1,6 @@
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include "fge.h"
+
+/**
 main(int argc, char **argv){
 	int ret, total, keySize, urandFd;
 	char* keyPtr;
@@ -17,4 +17,5 @@ main(int argc, char **argv){
 	printf("Generated key with size <%d>\n",total);
 	close(urandFd);
 }
+**/
 
