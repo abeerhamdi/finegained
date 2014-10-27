@@ -79,7 +79,22 @@ int main(int argc, char **argv)
 			fprintf(fde,"%s", contentCipher);
 			free(contentCipher);
 		}
-		
+		i = 0;
+		int lastPosition = 0;
+		lseek(fdp, 0, SEEK_SET);
+		for(i; i<numSegments; i++){
+			char * buf = malloc(sizeof(char)*(segments[i].start-lastPosition));
+			read(fdp, buf,segments[i].start-lastPosition);
+			
+			fprintf(fde,"%s", buf);
+			fprintf(fde,"%s", "X");
+			lastPosition = lseek(fdp, segments[i].length, SEEK_CUR);
+			free(buf);
+		}
+		char * buf = malloc(sizeof(char)*(37-lastPosition));
+		read(fdp, buf,segments[i].start-lastPosition);
+		fprintf(fde,"%s", buf);
+		free(buf);
 		return;
 	} else if(strcmp(argv[1] , "-c") == 0){
 		
