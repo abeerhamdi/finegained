@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 		int lastPosition = 0;
 		lseek(fdp, 0, SEEK_SET);
 		for(i; i<numSegments; i++){
-			char * buf = malloc(sizeof(char)*(segments[i].start-lastPosition));
+			char * buf = calloc(sizeof(char)*(segments[i].start-lastPosition),sizeof(char)*(segments[i].start-lastPosition));
 			read(fdp, buf,segments[i].start-lastPosition);
 			
 			fprintf(fde,"%s", buf);
