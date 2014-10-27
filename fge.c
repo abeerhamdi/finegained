@@ -11,6 +11,13 @@
 #define BLOCKSIZE 8
 #define BUFSIZE 10
 
+void fprint_string_as_hex(FILE * f, unsigned char *s, int len)
+{
+	int i;
+	for (i = 0; i < len; i++) {
+		fprintf(f, "%02x", s[i]);
+	}
+}
 
 void initialize_key(unsigned char *key)
 {
@@ -44,6 +51,7 @@ int main(int argc, char **argv)
 {
 	EVP_CIPHER_CTX *ctx; /* SSL context */
 	const EVP_CIPHER *cipher = EVP_bf_cbc();/* Cipher */
+
 	unsigned char key[EVP_MAX_KEY_LENGTH];
 	unsigned char msg[] = "Sample message.";
 	unsigned char * ciphertext;
@@ -57,7 +65,7 @@ int main(int argc, char **argv)
 	(default size)*/
 	initialize_key(key);
 	/* Print key in HEX */
-	fprint_key(stdout,key,EVP_CIPHER_key_length(cipher));
+	fprint_string_as_hex(stdout,key,EVP_CIPHER_key_length(cipher));
 	/* Initialization context */
 	EVP_EncryptInit_ex(ctx, cipher, NULL, key, ivec);
 	/* Allocate space for the ciphertext */
