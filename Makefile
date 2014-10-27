@@ -2,10 +2,10 @@
 CC = gcc
 EXEC = fge
 CCFLAGS = -O2
-OBJS = util.o crypt.o fge.o
+OBJS = fge.o util.o crypt.o
 LIBS = -lssl -lcrypto
 
-${EXEC}: ${EXEC}.c
+${EXEC}: ${OBJS}
 	${CC} ${CCFLAGS} -lm -o ${EXEC} ${OBJS} ${LIBS}
 
 .c.o:
@@ -13,7 +13,7 @@ ${EXEC}: ${EXEC}.c
 
 run: ${EXEC}
 	./${EXEC}
-    
+
 clean:
 	rm -f ${EXEC} ${OBJS}
 
