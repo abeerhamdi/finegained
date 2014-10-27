@@ -1,11 +1,12 @@
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <string.h>
 #include <openssl/blowfish.h>
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
-
+#include <openssl/sha.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <fcntl.h>
 
 #define MAXKEYLEN 56
 #define ACTKEYLEN 32
@@ -17,3 +18,4 @@ void initialize_key(unsigned char *key);
 unsigned char * allocate_ciphertext(int mlen);
 void encrypt_and_print(EVP_CIPHER_CTX * ectx, char *msg, int mlen,char *res, int *olen, FILE * f);
 void encrypt();
+void hash();
