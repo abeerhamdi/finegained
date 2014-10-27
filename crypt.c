@@ -29,45 +29,34 @@ unsigned char * allocate_ciphertext(int mlen)
 }
 
 
-void encrypt_and_print(EVP_CIPHER_CTX * ectx, char *msg, int mlen,char *res, int *olen, FILE * f)
-{
-	int extlen;
-	
-	EVP_EncryptUpdate(ectx, res, olen, msg, mlen);
-	EVP_EncryptFinal_ex(ectx, &res[*olen], &extlen);
-	
-	*olen += extlen;
-	
-	fprintf(f, "Encrypted result: ");
-	fprint_string_as_hex(f, res, *olen);
-	fprintf(f, "\n");
-}
-
-
-void encrypt(){
+int encrypt(unsigned char *ptxt, unsigned char *key, unsigned char *ctxt){
 	EVP_CIPHER_CTX *ctx; /* SSL context */
 	const EVP_CIPHER *cipher = EVP_bf_cbc();/* Cipher */
-
-	unsigned char key[EVP_MAX_KEY_LENGTH];
-	unsigned char msg[] = "Sample message.";
-	unsigned char * ciphertext;
+	//initialize_key(key);  Get random key for file
+	//unsigned char key[EVP_MAX_KEY_LENGTH];  Initilize key to size
 	char ivec[EVP_MAX_IV_LENGTH] = {0};
-	int mlen = strlen(msg) + 1;
+	int mlen = strlen(ptxt) + 1;
 	int ctlen;
+	int extlen;
 	ctx = (EVP_CIPHER_CTX *) malloc(sizeof(EVP_CIPHER_CTX));
 	EVP_CIPHER_CTX_init(ctx); 
 	/* Blowfish CBC mode
 	128-bit keys
 	(default size)*/
-	initialize_key(key);
 	/* Print key in HEX */
-	fprint_string_as_hex(stdout,key,EVP_CIPHER_key_length(cipher));
+	//fprint_string_as_hex(stdout,key,EVP_CIPHER_key_length(cipher));
 	/* Initialization context */
 	EVP_EncryptInit_ex(ctx, cipher, NULL, key, ivec);
 	/* Allocate space for the ciphertext */
-	ciphertext = allocate_ciphertext(mlen);
+	ctxt = allocate_ciphertext(mlen);
 	/* Encrypt data and print */
-	encrypt_and_print(ctx, msg, mlen, ciphertext,&ctlen, stdout);
+	//encrypt_and_print(ctx, msg, mlen, ciphertext,&ctlen, stdout);
+	EVP_EncryptUpdate(ctx, ctxt, &ctlen, ptxt, mlen);
+	EVP_EncryptFinal_ex(ctx, &ctxt[ctlen], &extlen);
+	ctlen += extlen;
+	return ctlen;
+	//initialize_key(key);  Get random key for file
+	//unsigned char key[EVP_MAX_KEY_LENGTH];  Initilize key to size
 }
 
 void hash(unsigned char *keytext, unsigned char *sha){

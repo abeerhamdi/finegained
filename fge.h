@@ -16,6 +16,5 @@
 void fprint_string_as_hex(FILE * f, unsigned char *s, int len);
 void initialize_key(unsigned char *key);
 unsigned char * allocate_ciphertext(int mlen);
-void encrypt_and_print(EVP_CIPHER_CTX * ectx, char *msg, int mlen,char *res, int *olen, FILE * f);
-void encrypt();
+int encrypt(unsigned char *ptxt, unsigned char *key, unsigned char *ctxt);
 void hash(unsigned char *keytext, unsigned char *sha);
