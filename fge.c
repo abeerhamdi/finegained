@@ -15,7 +15,7 @@ int main(int argc, char **argv)
 	unsigned char key[MAXKEYLEN];/* Encryption key */
 	int fdp; /* Plaintext file */
 	if(argc < 3){
-		printf("%s\n", "Not enough args!"); 
+		printf("%s\n", "Not enough args!");
 		return;
 	} else if(strcmp(argv[1],"-s") == 0){
 		initialize_key(key);
@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 		//open the file
 		fdp=open(argv[2],O_RDONLY);/* Plaintext */
 		int argNum = 3;
-		int i =0;
+		int i = 0;
 		for(i; i<numSegments; i++){
 			segments[i].start = atoi(argv[argNum]);
 			segments[i].length = atoi(argv[++argNum]);
@@ -59,7 +59,7 @@ int main(int argc, char **argv)
 		unsigned char * nCipher = allocate_ciphertext(8);
 		encrypt((char *)&numSegments, key, nCipher);
 		fprintf(fde,"%d", nCipher);
-		i =0;
+		i = 0;
 		unsigned char * startCipher;
 		unsigned char * lengthCipher;
 		unsigned char * contentCipher;
@@ -83,16 +83,27 @@ int main(int argc, char **argv)
 		int lastPosition = 0;
 		lseek(fdp, 0, SEEK_SET);
 		for(i; i<numSegments; i++){
-			char * buf = calloc(sizeof(char)*(segments[i].start-lastPosition),sizeof(char)*(segments[i].start-lastPosition));
-			read(fdp, buf,segments[i].start-lastPosition);
-			
+			char * buf = malloc(sizeof(char)*(segments[i].start-lastPosition));
+			read(fdp, buf,(segments[i].start-lastPosition));
+			buf[(segments[i].start-lastPosition)] = '\0';
 			fprintf(fde,"%s", buf);
 			fprintf(fde,"%s", "X");
 			lastPosition = lseek(fdp, segments[i].length, SEEK_CUR);
 			free(buf);
 		}
-		char * buf = malloc(sizeof(char)*(37-lastPosition));
-		read(fdp, buf,segments[i].start-lastPosition);
+		i = 0;
+		int buflen = 10;
+		char * buf = malloc(sizeof(char)*buflen);
+		read(fdp, &buf[i] ,1);
+		while(buf[i] > 0){
+			if(i == buflen - 1){
+				buflen += 10;
+				buf = realloc(buf, sizeof(char)*buflen);
+			}
+			i++;
+			read(fdp, &buf[i] ,1);
+		}
+		buf[i-1] = '\0';
 		fprintf(fde,"%s", buf);
 		free(buf);
 		return;
@@ -163,5 +174,3 @@ int main(int argc, char **argv)
 	printf(">\n");
 
 }
-
-
