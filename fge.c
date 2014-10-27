@@ -13,14 +13,34 @@ int main(int argc, char **argv)
 		char * content;
 	};
 	unsigned char key[MAXKEYLEN];/* Encryption key */
+	int fdp; /* Plaintext file */
 	if(argc < 3){
 		printf("%s\n", "Not enough args!"); 
 		return;
 	} else if(strcmp(argv[1],"-s") == 0){
 		initialize_key(key);
 		numSegments = (argc - 3)/2;
-		printf("%d", numSegments);
 		struct segment segments[numSegments];
+		//open the file
+		fdp=open(argv[2],O_RDONLY);/* Plaintext */
+		int argNum = 3;
+		int i =0;
+		for(i; i<numSegments; i++){
+			segments[i].start = atoi(argv[argNum]);
+			segments[i].length = atoi(argv[++argNum]);
+			
+			lseek(fdp,segments[i].start,SEEK_SET);
+			char * buf = malloc(sizeof(char)*segments[i].length);
+			read(fdp, buf, segments[i].length);
+			segments[i].content = buf;
+			free(buf);
+			
+			argNum++;
+		}
+		int fde; /* Ciphertext file */
+		encFile=malloc(strlen(argv[1])+5); /* filename.enc */
+		strcpy(encFile,argv[1]); strcat(encFile,".enc");
+		fde=open(encFile,O_CREAT|O_TRUNC|O_WRONLY|O_APPEND,S_IRUSR|S_IWUSR);
 		
 		kid = rand();
 		char * passphrase = getpass("Enter password:\n");
@@ -39,7 +59,6 @@ int main(int argc, char **argv)
 	EVP_CIPHER *cipher; /* Cipher */
 	char ivec[EVP_MAX_IV_LENGTH] = {0};
 	int fdk; /* Key to this file */
-	int fdp; /* Plaintext file */
 	char buf[BUFSIZE]; /* Hold plaintext */
 	int mlen; /* Length of plaintext */
 	int fde; /* Ciphertext file */
@@ -62,7 +81,7 @@ int main(int argc, char **argv)
 	close(fdk);
 
 	/* Encrypt file contents */
-	fdp=open(argv[1],O_RDONLY);/* Plaintext */
+	//fdp=open(argv[1],O_RDONLY);/* Plaintext */
 	encFile=malloc(strlen(argv[1])+5); /* filename.enc */
 	strcpy(encFile,argv[1]); strcat(encFile,".enc");
 	printf("Writing encrypted file content to <%s>\n",encFile);
