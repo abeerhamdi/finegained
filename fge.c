@@ -4,14 +4,14 @@
 int main(int argc, char **argv)
 {
 	int numSegments = 0;
-	uint32_t  kid = malloc(4);
+	uint32_t  kid;
 	uint32_t magic = 1420420420;
 	uint32_t start = 1111111111;
-	typedef struct segment  {
+	typedef struct {
 		uint32_t start;
 		uint32_t length;
 		char * content;
-	};
+	}segment;
 	unsigned char key[MAXKEYLEN];/* Encryption key */
 	int fdp; /* Plaintext file */
 	if(argc < 3){
@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 	} else if(strcmp(argv[1],"-s") == 0){
 		initialize_key(key);
 		numSegments = (argc - 3)/2;
-		struct segment segments[numSegments];
+		segment segments[numSegments];
 		//open the file
 		fdp=open(argv[2],O_RDONLY);/* Plaintext */
 		int argNum = 3;
@@ -33,7 +33,6 @@ int main(int argc, char **argv)
 			char * buf = malloc(sizeof(char)*segments[i].length);
 			read(fdp, buf, segments[i].length);
 			segments[i].content = buf;
-			free(buf);
 			
 			argNum++;
 		}
@@ -53,10 +52,33 @@ int main(int argc, char **argv)
 		int mlen = strlen(key) + 1;
 		unsigned char * keyCipher = allocate_ciphertext(mlen);
 		unsigned char * kidCipher = allocate_ciphertext(8);
+		encrypt((char *)&kid, sha, kidCipher);
 		encrypt(key, sha, keyCipher);
-		encrypt(key, sha, kidCipher);
 		fprintf(fde,"%d", kidCipher);
 		fprintf(fde,"%s", keyCipher);
+		unsigned char * nCipher = allocate_ciphertext(8);
+		encrypt((char *)&numSegments, key, nCipher);
+		fprintf(fde,"%d", nCipher);
+		i =0;
+		unsigned char * startCipher;
+		unsigned char * lengthCipher;
+		unsigned char * contentCipher;
+		for(i; i<numSegments; i++){
+			startCipher = allocate_ciphertext(8);
+			lengthCipher = allocate_ciphertext(8);
+			encrypt((char *)&segments[i].start, key, startCipher);
+			fprintf(fde,"%d", startCipher);
+			encrypt((char *)&segments[i].length, key, lengthCipher);
+			fprintf(fde,"%d", lengthCipher);
+			free(startCipher);
+			free(lengthCipher);
+			
+			mlen = strlen(key) + 1;
+			contentCipher = allocate_ciphertext(mlen);
+			encrypt(segments[i].content, key, contentCipher);
+			fprintf(fde,"%s", contentCipher);
+			free(contentCipher);
+		}
 		
 		return;
 	} else if(strcmp(argv[1] , "-c") == 0){
