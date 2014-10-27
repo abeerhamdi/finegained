@@ -50,9 +50,14 @@ int main(int argc, char **argv)
 		unsigned char sha[SHA_DIGEST_LENGTH];
 		hash(passphrase,sha);
 		fprintf(fde,"%s",sha);
-		unsigned char * keyCipher;
+		int mlen = strlen(key) + 1;
+		unsigned char * keyCipher = allocate_ciphertext(mlen);
+		unsigned char * kidCipher = allocate_ciphertext(8);
 		encrypt(key, sha, keyCipher);
-		printf("%s", keyCipher);
+		encrypt(key, sha, kidCipher);
+		fprintf(fde,"%d", kidCipher);
+		fprintf(fde,"%s", keyCipher);
+		
 		return;
 	} else if(strcmp(argv[1] , "-c") == 0){
 		
