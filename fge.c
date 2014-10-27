@@ -4,7 +4,7 @@
 int main(int argc, char **argv)
 {
 	int numSegments = 0;
-	uint32_t kid;
+	uint32_t  kid = malloc(4);
 	uint32_t magic = 1420420420;
 	uint32_t start = 1111111111;
 	typedef struct segment  {
@@ -37,15 +37,22 @@ int main(int argc, char **argv)
 			
 			argNum++;
 		}
-		int fde; /* Ciphertext file */
-		encFile=malloc(strlen(argv[1])+5); /* filename.enc */
-		strcpy(encFile,argv[1]); strcat(encFile,".enc");
-		fde=open(encFile,O_CREAT|O_TRUNC|O_WRONLY|O_APPEND,S_IRUSR|S_IWUSR);
-		
 		kid = rand();
-		char * passphrase = getpass("Enter password:\n");
-		//k key = hash password
-		
+		char *encFile; /* Ciphertext file name */
+		FILE * fde; /* Ciphertext file */
+		encFile=malloc(strlen(argv[2])+5); /* filename.enc */
+		strcpy(encFile,argv[2]); strcat(encFile,".enc");
+		fde=fopen(encFile,"w+");
+		fprintf(fde,"%d", kid);
+		fprintf(fde,"%d", magic);
+		fprintf(fde,"%d", start);
+		unsigned char * passphrase = getpass("Enter password:");
+		unsigned char sha[SHA_DIGEST_LENGTH];
+		hash(passphrase,sha);
+		fprintf(fde,"%s",sha);
+		unsigned char * keyCipher;
+		encrypt(key, sha, keyCipher);
+		printf("%s", keyCipher);
 		return;
 	} else if(strcmp(argv[1] , "-c") == 0){
 		
@@ -62,9 +69,10 @@ int main(int argc, char **argv)
 	char buf[BUFSIZE]; /* Hold plaintext */
 	int mlen; /* Length of plaintext */
 	int fde; /* Ciphertext file */
-	char *encFile; /* Ciphertext file name */
 	unsigned char *ciphertext;/* Pointer to ciphertext */
 	int ctlen; /* Length of ciphertext */
+	
+		char *encFile; 
 	
 	/* Generate the key -- may be more bytes than needed*/
 	//initialize_key(key,MAXKEYLEN);
