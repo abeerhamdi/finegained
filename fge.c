@@ -5,7 +5,7 @@ int main(int argc, char **argv)
 {
 	int numSegments = 0;
 	uint32_t  kid;
-	uint32_t magic = 1420420420;
+	uint32_t magic = MAGIC;
 	uint32_t start;
 	typedef struct {
 		uint32_t start;
@@ -57,19 +57,19 @@ int main(int argc, char **argv)
 		
 		unsigned char * kidCipher = allocate_ciphertext(8);
 		int kidCipherLen = encrypt((char *)&kid, sha, kidCipher);
-		kidCipher[kidCipherLen] = "\0";
+		kidCipher[kidCipherLen] = '\0';
 		fprintf(fde,"%s", kidCipher);
 		start+=kidCipherLen;
 		
 		unsigned char * keyCipher = allocate_ciphertext(mlen);
 		int keyCipherLen = encrypt(key, sha, keyCipher);
-		keyCipher[keyCipherLen] = "\0";
+		keyCipher[keyCipherLen] = '\0';
 		fprintf(fde,"%s", keyCipher);
 		start+=keyCipherLen;
 		
 		unsigned char * nCipher = allocate_ciphertext(8);
 		int nCipherLen = encrypt((char *)&numSegments, key, nCipher);
-		nCipher[nCipherLen] = "\0";
+		nCipher[nCipherLen] = '\0';
 		fprintf(fde,"%d", nCipher);
 		start+=nCipherLen;
 		
@@ -83,14 +83,14 @@ int main(int argc, char **argv)
 		for(i; i<numSegments; i++){
 			startCipher = allocate_ciphertext(8);
 			startCipherLen = encrypt((char *)&segments[i].start, key, startCipher);
-			startCipher[startCipherLen] = "\0";
+			startCipher[startCipherLen] = '\0';
 			fprintf(fde,"%s", startCipher);
 			free(startCipher);
 			start+=startCipherLen;
 			
 			lengthCipher = allocate_ciphertext(8);
 			lengthCipherLen = encrypt((char *)&segments[i].length, key, lengthCipher);
-			lengthCipher[lengthCipherLen] = "\0";
+			lengthCipher[lengthCipherLen] = '\0';
 			fprintf(fde,"%s", lengthCipher);
 			free(lengthCipher);
 			start+=lengthCipherLen;
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 			mlen = strlen(key) + 1;
 			contentCipher = allocate_ciphertext(mlen);
 			contentCipherLen = encrypt(segments[i].content, key, contentCipher);
-			contentCipher[contentCipherLen] = "\0";
+			contentCipher[contentCipherLen] = '\0';
 			fprintf(fde,"%s", contentCipher);
 			free(contentCipher);
 			start+=contentCipherLen;
@@ -171,10 +171,9 @@ int main(int argc, char **argv)
 		plainTextBuf[i-1] = '\0';
 		printf("%s\n", plainTextBuf);
 		free(plainTextBuf);
+		free(
 		return;
 	} else if(strcmp(argv[1],"-key") == 0){
 		
 	}
-	
-	
 }
