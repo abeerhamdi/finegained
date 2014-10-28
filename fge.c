@@ -135,7 +135,37 @@ int main(int argc, char **argv)
 		free(buf);
 		return;
 	} else if(strcmp(argv[1] , "-c") == 0){
+		char *encFile = malloc(strlen(argv[2])+5); /* filename.enc */
+		strcpy(encFile,argv[2]); 
+		strcat(encFile,".enc");
 		
+		fdp=open(encFile,O_RDONLY);/* Plaintext */
+		char * kidBuf = malloc(sizeof(char)*10);
+		read(fdp, kidBuf, 10);
+		
+		char * magicBuf = malloc(sizeof(char)*10);
+		read(fdp, magicBuf, 10);
+		printf("%d\n" ,strtol(magicBuf, NULL, 0));
+		if(strtol(magicBuf, NULL, 0) != MAGIC){
+			printf("%s\n", "This is not an fge secured file!");
+			return;
+		}
+
+		unsigned char * passphrase = getpass("Enter password:");
+		unsigned char sha[SHA_DIGEST_LENGTH];
+		hash(passphrase, sha);
+		lseek(fdp, 4, SEEK_CUR); //jump over start
+
+		char * encKidBuf;
+		char * cipKidBuf = malloc(sizeof(char)*10);
+		read(fdp, cipKidBuf, 10);
+		decrypt(encKidBuf, sha, cipKidBuf, 4);
+		if(strtol(magicBuf, NULL, 0) == strtol(magicBuf, NULL, 0)){
+			printf("%s\n", "Yay decryption worked!");
+		}
+		else{
+			printf("%s\n", "Fuck...");
+		}
 	} else if(strcmp(argv[1] ,"-u") == 0){
 		char *encFile = malloc(strlen(argv[2])+5); /* filename.enc */
 		strcpy(encFile,argv[2]); strcat(encFile,".enc");
@@ -146,6 +176,7 @@ int main(int argc, char **argv)
 		
 		char * magicBuf = malloc(sizeof(char)*10);
 		read(fdp, magicBuf, 10);
+		printf("%d\n" ,strtol(magicBuf, NULL, 0));
 		if(magic != strtol(magicBuf, NULL, 0)){
 			printf("%s\n", "Wrong File");
 			return;
