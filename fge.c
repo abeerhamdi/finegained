@@ -6,7 +6,7 @@ int main(int argc, char **argv)
 	int numSegments = 0;
 	uint32_t  kid;
 	uint32_t magic = 1420420420;
-	uint32_t start = 1111111111;
+	uint32_t start;
 	typedef struct {
 		uint32_t start;
 		uint32_t length;
@@ -18,7 +18,6 @@ int main(int argc, char **argv)
 		printf("%s\n", "Not enough args!");
 		return;
 	} else if(strcmp(argv[1],"-s") == 0){
-		initialize_key(key);
 		numSegments = (argc - 3)/2;
 		segment segments[numSegments];
 		//open the file
@@ -41,44 +40,72 @@ int main(int argc, char **argv)
 		FILE * fde; /* Ciphertext file */
 		encFile=malloc(strlen(argv[2])+5); /* filename.enc */
 		strcpy(encFile,argv[2]); strcat(encFile,".enc");
-		fde=fopen(encFile,"w+");
-		fprintf(fde,"%d", kid);
-		fprintf(fde,"%d", magic);
-		fprintf(fde,"%d", start);
+		fde=fopen(encFile,"w+");//open file
+		
+		fprintf(fde,"0x%08X", kid);
+		fprintf(fde,"0x%08X", magic);
+		//fprintf(fde,"0x%08X", start);
+		
+		start = 30;//kid + magic+start
+		
 		unsigned char * passphrase = getpass("Enter password:");
 		unsigned char sha[SHA_DIGEST_LENGTH];
 		hash(passphrase,sha);
-		fprintf(fde,"%s",sha);
+		
+		initialize_key(key);
 		int mlen = strlen(key) + 1;
-		unsigned char * keyCipher = allocate_ciphertext(mlen);
+		
 		unsigned char * kidCipher = allocate_ciphertext(8);
-		encrypt((char *)&kid, sha, kidCipher);
-		encrypt(key, sha, keyCipher);
-		fprintf(fde,"%d", kidCipher);
+		int kidCipherLen = encrypt((char *)&kid, sha, kidCipher);
+		kidCipher[kidCipherLen] = "\0";
+		fprintf(fde,"%s", kidCipher);
+		start+=kidCipherLen;
+		
+		unsigned char * keyCipher = allocate_ciphertext(mlen);
+		int keyCipherLen = encrypt(key, sha, keyCipher);
+		keyCipher[keyCipherLen] = "\0";
 		fprintf(fde,"%s", keyCipher);
+		start+=keyCipherLen;
+		
 		unsigned char * nCipher = allocate_ciphertext(8);
-		encrypt((char *)&numSegments, key, nCipher);
+		int nCipherLen = encrypt((char *)&numSegments, key, nCipher);
+		nCipher[nCipherLen] = "\0";
 		fprintf(fde,"%d", nCipher);
+		start+=nCipherLen;
+		
 		i = 0;
 		unsigned char * startCipher;
 		unsigned char * lengthCipher;
 		unsigned char * contentCipher;
+		int startCipherLen;
+		int lengthCipherLen;
+		int contentCipherLen;
 		for(i; i<numSegments; i++){
 			startCipher = allocate_ciphertext(8);
-			lengthCipher = allocate_ciphertext(8);
-			encrypt((char *)&segments[i].start, key, startCipher);
-			fprintf(fde,"%d", startCipher);
-			encrypt((char *)&segments[i].length, key, lengthCipher);
-			fprintf(fde,"%d", lengthCipher);
+			startCipherLen = encrypt((char *)&segments[i].start, key, startCipher);
+			startCipher[startCipherLen] = "\0";
+			fprintf(fde,"%s", startCipher);
 			free(startCipher);
+			start+=startCipherLen;
+			
+			lengthCipher = allocate_ciphertext(8);
+			lengthCipherLen = encrypt((char *)&segments[i].length, key, lengthCipher);
+			lengthCipher[lengthCipherLen] = "\0";
+			fprintf(fde,"%s", lengthCipher);
 			free(lengthCipher);
+			start+=lengthCipherLen;
 			
 			mlen = strlen(key) + 1;
 			contentCipher = allocate_ciphertext(mlen);
-			encrypt(segments[i].content, key, contentCipher);
+			contentCipherLen = encrypt(segments[i].content, key, contentCipher);
+			contentCipher[contentCipherLen] = "\0";
 			fprintf(fde,"%s", contentCipher);
 			free(contentCipher);
+			start+=contentCipherLen;
 		}
+		fseek(fde, 20, SEEK_SET);
+		fprintf(fde,"0x%08X", start);
+		fseek(fde, start, SEEK_SET);
 		i = 0;
 		int lastPosition = 0;
 		lseek(fdp, 0, SEEK_SET);
@@ -110,67 +137,44 @@ int main(int argc, char **argv)
 	} else if(strcmp(argv[1] , "-c") == 0){
 		
 	} else if(strcmp(argv[1] ,"-u") == 0){
-	
+		char *encFile = malloc(strlen(argv[2])+5); /* filename.enc */
+		strcpy(encFile,argv[2]); strcat(encFile,".enc");
+		fdp=open(encFile,O_RDONLY);//encrypted file
+		
+		char * kidBuf = malloc(sizeof(char)*10);
+		read(fdp, kidBuf, 10);
+		
+		char * magicBuf = malloc(sizeof(char)*10);
+		read(fdp, magicBuf, 10);
+		if(magic != strtol(magicBuf, NULL, 0)){
+			printf("%s\n", "Wrong File");
+			return;
+		}
+		
+		char * startBuf = malloc(sizeof(char)*10);
+		read(fdp, startBuf, 10);
+		
+		lseek(fdp, strtol(startBuf, NULL, 0), SEEK_SET);
+		
+		int buflen = 10;
+		int i = 0;
+		char * plainTextBuf = malloc(sizeof(char)*buflen);
+		read(fdp, &plainTextBuf[i] ,1);
+		while(plainTextBuf[i] > 0){
+			if(i == buflen - 1){
+				buflen += 10;
+				plainTextBuf = realloc(plainTextBuf, sizeof(char)*buflen);
+			}
+			i++;
+			read(fdp, &plainTextBuf[i] ,1);
+		}
+		plainTextBuf[i-1] = '\0';
+		printf("%s\n", plainTextBuf);
+		free(plainTextBuf);
+		return;
 	} else if(strcmp(argv[1],"-key") == 0){
 		
 	}
 	
-	EVP_CIPHER_CTX *ctx; /* Encryption context*/
-	EVP_CIPHER *cipher; /* Cipher */
-	char ivec[EVP_MAX_IV_LENGTH] = {0};
-	int fdk; /* Key to this file */
-	char buf[BUFSIZE]; /* Hold plaintext */
-	int mlen; /* Length of plaintext */
-	int fde; /* Ciphertext file */
-	unsigned char *ciphertext;/* Pointer to ciphertext */
-	int ctlen; /* Length of ciphertext */
 	
-		char *encFile; 
-	
-	/* Generate the key -- may be more bytes than needed*/
-	//initialize_key(key,MAXKEYLEN);
-	fprintf(stdout,"Raw file key bytes <");
-	fprint_string_as_hex(stdout, key, MAXKEYLEN);
-	fprintf(stdout,">\n");
-	
-	/* Write key to file */
-	fdk=open(argv[2],O_CREAT|O_TRUNC|O_RDWR, S_IRUSR|S_IWUSR );
-	write(fdk,key,ACTKEYLEN);
-	printf("Key is <");
-	fprint_string_as_hex(stdout,key,ACTKEYLEN);
-	printf(">\n");
-	close(fdk);
-
-	/* Encrypt file contents */
-	//fdp=open(argv[1],O_RDONLY);/* Plaintext */
-	encFile=malloc(strlen(argv[1])+5); /* filename.enc */
-	strcpy(encFile,argv[1]); strcat(encFile,".enc");
-	printf("Writing encrypted file content to <%s>\n",encFile);
-	fde=open(encFile,O_CREAT|O_TRUNC|O_WRONLY|O_APPEND,S_IRUSR|S_IWUSR);
-	
-	cipher=(EVP_CIPHER *)EVP_bf_cbc();
-	ctx = (EVP_CIPHER_CTX *)malloc(sizeof(EVP_CIPHER_CTX));
-	EVP_CIPHER_CTX_init(ctx);
-	EVP_EncryptInit_ex(ctx,cipher,NULL,NULL,NULL);
-	EVP_CIPHER_CTX_set_key_length(ctx,ACTKEYLEN);
-	EVP_EncryptInit_ex(ctx,NULL,NULL,key,ivec);
-	ciphertext=allocate_ciphertext(BUFSIZE);
-	ctlen=0;
-	while ((mlen=read(fdp,buf,BUFSIZE))>0) {
-		printf("Read %d bytes of plaintext <",mlen);
-		fprint_string_as_hex(stdout,buf,mlen);printf(">\n");
-		EVP_EncryptUpdate(ctx, ciphertext, &ctlen, buf, mlen);
-		write(fde,ciphertext,ctlen);
-		printf("Wrote %d bytes of ciphertext <",ctlen);
-		fprint_string_as_hex(stdout,ciphertext,ctlen);
-		printf(">\n");
-	}
-	
-	ctlen=0;
-	EVP_EncryptFinal_ex(ctx,ciphertext, &ctlen);
-	write(fde,ciphertext,ctlen);
-	printf("Wrote %d bytes of ciphertext <",ctlen);
-	fprint_string_as_hex(stdout,ciphertext,ctlen);
-	printf(">\n");
-
 }
