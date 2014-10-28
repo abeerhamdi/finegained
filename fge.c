@@ -171,7 +171,9 @@ int main(int argc, char **argv)
 		plainTextBuf[i-1] = '\0';
 		printf("%s\n", plainTextBuf);
 		free(plainTextBuf);
-		free(
+		free(startBuf);
+		free(magicBuf);
+		free(kidBuf);
 		return;
 	} else if(strcmp(argv[1],"-key") == 0){
 		
