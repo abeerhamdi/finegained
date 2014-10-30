@@ -64,15 +64,17 @@ int decrypt(unsigned char *ptxt, unsigned char *key, unsigned char *ctxt, int ct
 	int extlen;
 	EVP_CIPHER_CTX *ctx; /* SSL context */
 
-	const EVP_CIPHER *cipher = EVP_bf_cbc();/* Cipher */
+	const EVP_CIPHER *cipher = EVP_bf_cbc();/* Blowfish Cipher */
 	ctx = (EVP_CIPHER_CTX *) malloc(sizeof(EVP_CIPHER_CTX));
 	char ivec[EVP_MAX_IV_LENGTH] = {0};
-	ptxt = (unsigned char *) malloc(sizeof(char)*(ctlen - BLOCKSIZE));
+	ptxt = (unsigned char *) malloc(sizeof(char)*(ctlen));
+
 
 	EVP_CIPHER_CTX_init(ctx); 
 	EVP_DecryptInit_ex(ctx, cipher, NULL, key, ivec);
 	EVP_DecryptUpdate(ctx, ptxt, &ptlen, ctxt, ctlen);
 	EVP_DecryptFinal_ex(ctx, &ptxt[ptlen], &extlen);
+
 	ptlen += extlen;
 	free(ctx);
 	return ptlen;

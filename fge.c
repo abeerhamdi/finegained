@@ -35,6 +35,7 @@ int main(int argc, char **argv)
 			
 			argNum++;
 		}
+		srand(time(NULL));
 		kid = rand();
 		char *encFile; /* Ciphertext file name */
 		FILE * fde; /* Ciphertext file */
@@ -45,6 +46,7 @@ int main(int argc, char **argv)
 		fprintf(fde,"0x%08X", kid);
 		fprintf(fde,"0x%08X", magic);
 		//fprintf(fde,"0x%08X", start);
+		printf("0x%08X", kid);
 		
 		start = 30;//kid + magic+start
 		
@@ -60,18 +62,21 @@ int main(int argc, char **argv)
 		kidCipher[kidCipherLen] = '\0';
 		fprintf(fde,"%s", kidCipher);
 		start+=kidCipherLen;
+		printf("%d kid cipher len\n", kidCipherLen);
 		
 		unsigned char * keyCipher = allocate_ciphertext(mlen);
 		int keyCipherLen = encrypt(key, sha, keyCipher);
 		keyCipher[keyCipherLen] = '\0';
 		fprintf(fde,"%s", keyCipher);
 		start+=keyCipherLen;
+		printf("%d key cipher len\n", keyCipherLen);
 		
 		unsigned char * nCipher = allocate_ciphertext(8);
 		int nCipherLen = encrypt((char *)&numSegments, key, nCipher);
 		nCipher[nCipherLen] = '\0';
 		fprintf(fde,"%d", nCipher);
 		start+=nCipherLen;
+		printf("%d n cipher len\n", nCipherLen);
 		
 		i = 0;
 		unsigned char * startCipher;
@@ -87,6 +92,7 @@ int main(int argc, char **argv)
 			fprintf(fde,"%s", startCipher);
 			free(startCipher);
 			start+=startCipherLen;
+			printf("%d start cipher len %d\n", startCipherLen,i);
 			
 			lengthCipher = allocate_ciphertext(8);
 			lengthCipherLen = encrypt((char *)&segments[i].length, key, lengthCipher);
@@ -94,6 +100,7 @@ int main(int argc, char **argv)
 			fprintf(fde,"%s", lengthCipher);
 			free(lengthCipher);
 			start+=lengthCipherLen;
+			printf("%d lenght cipher len %d\n", lengthCipherLen,i);
 			
 			mlen = strlen(key) + 1;
 			contentCipher = allocate_ciphertext(mlen);
@@ -102,6 +109,7 @@ int main(int argc, char **argv)
 			fprintf(fde,"%s", contentCipher);
 			free(contentCipher);
 			start+=contentCipherLen;
+			printf("%d content cipher len %d\n", contentCipherLen,i);
 		}
 		fseek(fde, 20, SEEK_SET);
 		fprintf(fde,"0x%08X", start);
@@ -136,13 +144,14 @@ int main(int argc, char **argv)
 		return;
 	} else if(strcmp(argv[1] , "-c") == 0){
 		char *encFile = malloc(strlen(argv[2])+5); /* filename.enc */
-		strcpy(encFile,argv[2]); 
+		strcpy(encFile,argv[2]);
 		strcat(encFile,".enc");
-		
+
 		fdp=open(encFile,O_RDONLY);/* Plaintext */
 		char * kidBuf = malloc(sizeof(char)*10);
 		read(fdp, kidBuf, 10);
-		
+		printf("%s\n",kidBuf);
+
 		char * magicBuf = malloc(sizeof(char)*10);
 		read(fdp, magicBuf, 10);
 		printf("%d\n" ,strtol(magicBuf, NULL, 0));
@@ -154,18 +163,26 @@ int main(int argc, char **argv)
 		unsigned char * passphrase = getpass("Enter password:");
 		unsigned char sha[SHA_DIGEST_LENGTH];
 		hash(passphrase, sha);
-		lseek(fdp, 4, SEEK_CUR); //jump over start
+		lseek(fdp, 10, SEEK_CUR); //jump over start
 
 		char * encKidBuf;
-		char * cipKidBuf = malloc(sizeof(char)*10);
-		read(fdp, cipKidBuf, 10);
-		decrypt(encKidBuf, sha, cipKidBuf, 4);
-		if(strtol(magicBuf, NULL, 0) == strtol(magicBuf, NULL, 0)){
+		char * cipKidBuf = malloc(8);
+		read(fdp, cipKidBuf, 8);
+		int declen = decrypt(encKidBuf, sha, cipKidBuf, 8);
+
+		char * eKidBuf = malloc(sizeof(char)*declen+2);
+		sprintf(eKidBuf, "0x%08X\n", encKidBuf);
+
+		printf("%d", strtol(kidBuf, NULL, 0));
+		printf("%d", strtol(eKidBuf, NULL, 0));
+
+		if(strtol(kidBuf, NULL, 0) == strtol(eKidBuf, NULL, 0)){
 			printf("%s\n", "Yay decryption worked!");
 		}
 		else{
-			printf("%s\n", "Fuck...");
+			printf("%s\n", "Fuck... we still got this.");
 		}
+		return;
 	} else if(strcmp(argv[1] ,"-u") == 0){
 		char *encFile = malloc(strlen(argv[2])+5); /* filename.enc */
 		strcpy(encFile,argv[2]); strcat(encFile,".enc");

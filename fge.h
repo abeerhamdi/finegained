@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <time.h>
 
 #define MAXKEYLEN 56
 #define ACTKEYLEN 32

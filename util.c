@@ -18,5 +18,29 @@ main(int argc, char **argv){
 	printf("Generated key with size <%d>\n",total);
 	close(urandFd);
 }
-**/
 
+
+		fdp=open(argv[2],O_RDONLY);/* Plaintext 
+		uint32_t pkid;
+		uint32_t ekid;
+		uint32_t ckid;
+		uint32_t maybeMagic;
+		read(fdp, &pkid, 4);
+		read(fdp, &maybeMagic, 4);
+		if(maybeMagic != MAGIC){
+			printf("%s\n", "This is not an fge secured file!");
+			return;
+		}
+		unsigned char * passphrase = getpass("Enter password:");
+		unsigned char sha[SHA_DIGEST_LENGTH];
+		hash(passphrase, sha);
+		lseek(fdp, 4, SEEK_CUR); //jump over start
+		read(fdp, &ekid, 4);
+		decrypt((char*)&ckid, sha, (char*)&ekid, 4);
+		if(ckid == ekid){
+			printf("%s\n", "Yay decryption worked!");
+		}
+		else{
+			printf("%s\n", "Fuck...");
+		}
+**/
