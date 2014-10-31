@@ -3,6 +3,7 @@
 
 int main(int argc, char **argv)
 {
+	mlockall();
 	int numSegments = 0;
 	uint32_t  kid;
 	uint32_t magic = MAGIC;
@@ -12,7 +13,7 @@ int main(int argc, char **argv)
 		uint32_t length;
 		char * content;
 	}segment;
-	unsigned char key[MAXKEYLEN];/* Encryption key */
+	unsigned char * key = (char *) malloc(MAXKEYLEN);/* Encryption key */
 	int fdp; /* Plaintext file */
 	if(argc < 3){
 		printf("%s\n", "Not enough args!");
@@ -46,11 +47,19 @@ int main(int argc, char **argv)
 		fprintf(fde,"0x%08X", kid);
 		fprintf(fde,"0x%08X", magic);
 		//fprintf(fde,"0x%08X", start);
-		printf("0x%08X", kid);
 		
 		start = 30;//kid + magic+start
 		
-		unsigned char * passphrase = getpass("Enter password:");
+		unsigned char * passphrase;
+		unsigned char * passphrase2;
+		
+		while(1){
+			passphrase = getpass("Enter password:\n");
+			passphrase2 = getpass("Enter password again:\n");
+			if(strcmp(passphrase,passphrase2)==0){
+				break;
+			}
+		}
 		unsigned char sha[SHA_DIGEST_LENGTH];
 		hash(passphrase,sha);
 		
@@ -62,21 +71,18 @@ int main(int argc, char **argv)
 		kidCipher[kidCipherLen] = '\0';
 		fprintf(fde,"%s", kidCipher);
 		start+=kidCipherLen;
-		printf("%d kid cipher len\n", kidCipherLen);
 		
 		unsigned char * keyCipher = allocate_ciphertext(mlen);
 		int keyCipherLen = encrypt(key, sha, keyCipher);
 		keyCipher[keyCipherLen] = '\0';
 		fprintf(fde,"%s", keyCipher);
 		start+=keyCipherLen;
-		printf("%d key cipher len\n", keyCipherLen);
 		
 		unsigned char * nCipher = allocate_ciphertext(8);
 		int nCipherLen = encrypt((char *)&numSegments, key, nCipher);
 		nCipher[nCipherLen] = '\0';
 		fprintf(fde,"%d", nCipher);
 		start+=nCipherLen;
-		printf("%d n cipher len\n", nCipherLen);
 		
 		i = 0;
 		unsigned char * startCipher;
@@ -92,7 +98,6 @@ int main(int argc, char **argv)
 			fprintf(fde,"%s", startCipher);
 			free(startCipher);
 			start+=startCipherLen;
-			printf("%d start cipher len %d\n", startCipherLen,i);
 			
 			lengthCipher = allocate_ciphertext(8);
 			lengthCipherLen = encrypt((char *)&segments[i].length, key, lengthCipher);
@@ -100,7 +105,6 @@ int main(int argc, char **argv)
 			fprintf(fde,"%s", lengthCipher);
 			free(lengthCipher);
 			start+=lengthCipherLen;
-			printf("%d lenght cipher len %d\n", lengthCipherLen,i);
 			
 			mlen = strlen(key) + 1;
 			contentCipher = allocate_ciphertext(mlen);
@@ -109,8 +113,8 @@ int main(int argc, char **argv)
 			fprintf(fde,"%s", contentCipher);
 			free(contentCipher);
 			start+=contentCipherLen;
-			printf("%d content cipher len %d\n", contentCipherLen,i);
 		}
+		free(key);
 		fseek(fde, 20, SEEK_SET);
 		fprintf(fde,"0x%08X", start);
 		fseek(fde, start, SEEK_SET);
@@ -141,6 +145,8 @@ int main(int argc, char **argv)
 		buf[i-1] = '\0';
 		fprintf(fde,"%s", buf);
 		free(buf);
+		close(fdp);
+		fclose(fde);
 		return;
 	} else if(strcmp(argv[1] , "-c") == 0){
 		char *encFile = malloc(strlen(argv[2])+5); /* filename.enc */
@@ -150,38 +156,40 @@ int main(int argc, char **argv)
 		fdp=open(encFile,O_RDONLY);/* Plaintext */
 		char * kidBuf = malloc(sizeof(char)*10);
 		read(fdp, kidBuf, 10);
-		printf("%s\n",kidBuf);
 
 		char * magicBuf = malloc(sizeof(char)*10);
 		read(fdp, magicBuf, 10);
-		printf("%d\n" ,strtol(magicBuf, NULL, 0));
 		if(strtol(magicBuf, NULL, 0) != MAGIC){
 			printf("%s\n", "This is not an fge secured file!");
 			return;
 		}
-
+		
 		unsigned char * passphrase = getpass("Enter password:");
 		unsigned char sha[SHA_DIGEST_LENGTH];
 		hash(passphrase, sha);
 		lseek(fdp, 10, SEEK_CUR); //jump over start
 
 		char * encKidBuf;
-		char * cipKidBuf = malloc(8);
+		char * cipKidBuf = malloc(9);
 		read(fdp, cipKidBuf, 8);
+		cipKidBuf[8] = '\0';
 		int declen = decrypt(encKidBuf, sha, cipKidBuf, 8);
-
-		char * eKidBuf = malloc(sizeof(char)*declen+2);
-		sprintf(eKidBuf, "0x%08X\n", encKidBuf);
-
-		printf("%d", strtol(kidBuf, NULL, 0));
-		printf("%d", strtol(eKidBuf, NULL, 0));
-
+		printf("%s", encKidBuf);
+		return;
+		char * eKidBuf = malloc(sizeof(char)*(8+3));
+		strcpy(eKidBuf, "0x");
+		strcat(eKidBuf, cipKidBuf);
+		eKidBuf[10] = '\0';
+		printf("%d\n", strtol(kidBuf, NULL, 0));
+		printf("%d\n", strtol(eKidBuf, NULL, 0));
+		return;
 		if(strtol(kidBuf, NULL, 0) == strtol(eKidBuf, NULL, 0)){
 			printf("%s\n", "Yay decryption worked!");
 		}
 		else{
 			printf("%s\n", "Fuck... we still got this.");
 		}
+		close(fdp);
 		return;
 	} else if(strcmp(argv[1] ,"-u") == 0){
 		char *encFile = malloc(strlen(argv[2])+5); /* filename.enc */
@@ -193,9 +201,8 @@ int main(int argc, char **argv)
 		
 		char * magicBuf = malloc(sizeof(char)*10);
 		read(fdp, magicBuf, 10);
-		printf("%d\n" ,strtol(magicBuf, NULL, 0));
 		if(magic != strtol(magicBuf, NULL, 0)){
-			printf("%s\n", "Wrong File");
+			printf("%s\n", "This is not an fge secured file!");
 			return;
 		}
 		
@@ -222,8 +229,10 @@ int main(int argc, char **argv)
 		free(startBuf);
 		free(magicBuf);
 		free(kidBuf);
+		close(fdp);
 		return;
 	} else if(strcmp(argv[1],"-key") == 0){
 		
 	}
+	munlockall();
 }
